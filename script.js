@@ -3,44 +3,64 @@ const balance = document.getElementById("balance");
 const money_plus = document.getElementById("money-plus");
 const money_minus = document.getElementById("money-minus");
 const list = document.getElementById("list");
+const emptyList = document.getElementById("empty-list");
 const form = document.getElementById("form");
+const formError = document.getElementById("form-error");
 const text = document.getElementById("text");
 const amount = document.getElementById("amount");
 const date = document.getElementById("date");
 const filterDate = document.getElementById("filter-date");
 const spendingChartCanvas = document.getElementById('spendingChart');
-const openChartBtn = document.getElementById('open-chart');
 
 // Declare spendingChart variable at the top
 let spendingChart;
 
-// Retrieve transactions from local storage or set to empty array
-const localStorageTransactions = JSON.parse(localStorage.getItem('transactions'));
-let transactions = localStorage.getItem('transactions') !== null ? localStorageTransactions : [];
+const currency = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' });
+
+// Retrieve transactions from local storage, or start empty if there are none
+// or the stored value can't be read
+function loadTransactions() {
+  try {
+    const stored = JSON.parse(localStorage.getItem('transactions'));
+    return Array.isArray(stored) ? stored : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+let transactions = loadTransactions();
 
 // Add transaction
 function addTransaction(type) {
+  const value = Number(amount.value);
+
   if (text.value.trim() === '' || amount.value.trim() === '' || date.value.trim() === '') {
-    alert('Please add text, amount, and date');
-  } else {
-    const transaction = {
-      id: generateID(),
-      text: text.value,
-      amount: type === 'income' ? +amount.value : -amount.value,
-      date: date.value
-    };
-
-    transactions.push(transaction);
-
-    addTransactionDOM(transaction);
-    updateValues();
-    updateLocalStorage();
-    updateSpendingChart();
-
-    text.value = '';
-    amount.value = '';
-    date.value = '';
+    formError.textContent = 'Please add a description, amount and date.';
+    return;
   }
+
+  if (!(value > 0)) {
+    formError.textContent = 'The amount must be more than zero.';
+    return;
+  }
+
+  formError.textContent = '';
+
+  const transaction = {
+    id: generateID(),
+    text: text.value.trim(),
+    amount: type === 'income' ? value : -value,
+    date: date.value
+  };
+
+  transactions.push(transaction);
+
+  init();
+  updateLocalStorage();
+
+  text.value = '';
+  amount.value = '';
+  date.value = '';
 }
 
 // Generate random ID
@@ -48,33 +68,51 @@ function generateID() {
   return Math.floor(Math.random() * 1000000000);
 }
 
-// Add transaction to DOM list
+// Add transaction to DOM list. Built with DOM methods rather than innerHTML so
+// that whatever the user typed is shown as text, never parsed as HTML.
 function addTransactionDOM(transaction) {
-  // Get sign
-  const sign = transaction.amount < 0 ? "-₹" : "+₹";
+  const sign = transaction.amount < 0 ? '-' : '+';
   const item = document.createElement("li");
-
-  // Add class based on value
   item.classList.add(transaction.amount < 0 ? "minus" : "plus");
 
-  item.innerHTML = `
-    ${transaction.text} <span>${sign}${Math.abs(transaction.amount)}</span>
-    <span class="transaction-date">${transaction.date}</span>
-    <button class="delete-btn" onclick="removeTransaction(${transaction.id})">x</button>
-  `;
+  const label = document.createElement("span");
+  label.className = "transaction-text";
+  label.textContent = transaction.text;
+
+  const dateLabel = document.createElement("span");
+  dateLabel.className = "transaction-date";
+  dateLabel.textContent = transaction.date;
+  label.append(dateLabel);
+
+  const value = document.createElement("span");
+  value.textContent = `${sign}${currency.format(Math.abs(transaction.amount))}`;
+
+  const deleteButton = document.createElement("button");
+  deleteButton.type = "button";
+  deleteButton.className = "delete-btn";
+  deleteButton.textContent = "×";
+  deleteButton.setAttribute("aria-label", `Delete ${transaction.text}`);
+  deleteButton.addEventListener("click", () => removeTransaction(transaction.id));
+
+  item.append(deleteButton, label, value);
   list.appendChild(item);
+}
+
+// Show the list's empty message when there's nothing to list
+function updateEmptyState(count) {
+  emptyList.hidden = count > 0;
 }
 
 // Update the balance, income, and expense
 function updateValues() {
   const amounts = transactions.map(transaction => transaction.amount);
-  const total = amounts.reduce((acc, item) => (acc += item), 0).toFixed(2);
-  const income = amounts.filter(item => item > 0).reduce((acc, item) => (acc += item), 0).toFixed(2);
-  const expense = (amounts.filter(item => item < 0).reduce((acc, item) => (acc += item), 0) * -1).toFixed(2);
+  const total = amounts.reduce((acc, item) => (acc += item), 0);
+  const income = amounts.filter(item => item > 0).reduce((acc, item) => (acc += item), 0);
+  const expense = amounts.filter(item => item < 0).reduce((acc, item) => (acc += item), 0) * -1;
 
-  balance.innerText = `₹${total}`;
-  money_plus.innerText = `+₹${income}`;
-  money_minus.innerText = `-₹${expense}`;
+  balance.innerText = currency.format(total);
+  money_plus.innerText = `+${currency.format(income)}`;
+  money_minus.innerText = `-${currency.format(expense)}`;
 }
 
 // Remove transaction by ID
@@ -86,7 +124,11 @@ function removeTransaction(id) {
 
 // Update local storage transactions
 function updateLocalStorage() {
-  localStorage.setItem('transactions', JSON.stringify(transactions));
+  try {
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+  } catch (error) {
+    // Storage is full or blocked; the transactions stay on screen for this visit.
+  }
 }
 
 // Filter transactions by date
@@ -96,6 +138,8 @@ function filterTransactions() {
     const filteredTransactions = transactions.filter(transaction => transaction.date === filterDateValue);
     list.innerHTML = '';
     filteredTransactions.forEach(addTransactionDOM);
+    emptyList.textContent = 'No transactions on this date.';
+    updateEmptyState(filteredTransactions.length);
   }
 }
 
@@ -109,6 +153,8 @@ function clearFilter() {
 function init() {
   list.innerHTML = '';
   transactions.forEach(addTransactionDOM);
+  emptyList.textContent = 'No transactions yet. Add one below.';
+  updateEmptyState(transactions.length);
   updateValues();
   updateSpendingChart();
 }
@@ -171,8 +217,3 @@ function updateSpendingChart() {
     }
   });
 }
-
-// Open new chart tab
-openChartBtn.addEventListener('click', () => {
-  window.open('chart.html', '_blank');
-});

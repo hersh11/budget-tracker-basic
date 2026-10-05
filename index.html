@@ -3,64 +3,83 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Budget Buddy</title>
+  <title>Budget Buddy · Simple income and expense tracker</title>
+  <meta name="description" content="Budget Buddy is a free income and expense tracker that runs in your browser. Log transactions, see your balance, filter by date and chart income against spending by month." />
+  <meta name="author" content="Harsh Narain" />
+  <meta name="theme-color" content="#f39c12" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Budget Buddy" />
+  <meta property="og:description" content="A simple income and expense tracker that runs in your browser, with monthly charts." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Budget Buddy",
+      "description": "A simple income and expense tracker that runs in the browser, with monthly charts.",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web",
+      "isAccessibleForFree": true,
+      "author": { "@type": "Person", "name": "Harsh Narain", "url": "https://github.com/hersh11" }
+    }
+  </script>
 </head>
 <body>
-  <h2>Budget Buddy</h2>
-  <div class="container">
-    <h4>Your Balance</h4>
-    <h1 id="balance">₹0.00</h1>
+  <h1>Budget Buddy</h1>
+  <main class="container">
+    <p class="label">Your balance</p>
+    <p id="balance" class="balance">₹0.00</p>
     <div class="inc-exp-container">
       <div>
-        <h4>Income</h4>
+        <p class="label">Income</p>
         <p id="money-plus" class="money-plus">+₹0.00</p>
       </div>
       <div>
-        <h4>Expense</h4>
+        <p class="label">Expense</p>
         <p id="money-minus" class="money-minus">-₹0.00</p>
       </div>
     </div>
 
-    <h3>History</h3>
-    <ul id="list" class="list">
-      <!-- Transactions will be added here -->
-    </ul>
+    <h2>History</h2>
+    <p id="empty-list" class="empty-list" hidden>No transactions yet. Add one below.</p>
+    <ul id="list" class="list"></ul>
 
-    <h3>Add New Transaction</h3>
+    <h2>Add new transaction</h2>
     <form id="form">
       <div class="form-control">
-        <label for="text">Text</label>
-        <input type="text" id="text" placeholder="Enter text..." />
+        <label for="text">Description</label>
+        <input type="text" id="text" placeholder="e.g. Salary, Groceries" autocomplete="off" />
       </div>
       <div class="form-control">
-        <label for="amount">Amount</label>
-        <input type="number" id="amount" placeholder="Enter amount..." />
+        <label for="amount">Amount (₹)</label>
+        <input type="number" id="amount" placeholder="0.00" min="0.01" step="0.01" inputmode="decimal" />
       </div>
       <div class="form-control">
         <label for="date">Date</label>
         <input type="date" id="date" />
       </div>
-      <button class="btn btn-income" type="button" onclick="addTransaction('income')">Add Income</button>
-      <button class="btn btn-expense" type="button" onclick="addTransaction('expense')">Add Expense</button>
+      <p id="form-error" class="form-error" role="alert"></p>
+      <button class="btn btn-income" type="button" onclick="addTransaction('income')">Add income</button>
+      <button class="btn btn-expense" type="button" onclick="addTransaction('expense')">Add expense</button>
     </form>
 
-    <h3>Filter by Date</h3>
+    <h2>Filter by date</h2>
     <form id="filter-form">
       <div class="form-control">
-        <label for="filter-date">Select Date</label>
+        <label for="filter-date">Select date</label>
         <input type="date" id="filter-date" />
       </div>
       <button class="btn" type="button" onclick="filterTransactions()">Filter</button>
-      <button class="btn" type="button" onclick="clearFilter()">Clear Filter</button>
+      <button class="btn" type="button" onclick="clearFilter()">Clear filter</button>
     </form>
 
-    <h3>Spending Chart</h3>
-    <canvas id="spendingChart"></canvas>
-    <button id="open-chart" class="btn" type="button">Open Chart in New Tab</button>
-  </div>
+    <h2>Spending chart</h2>
+    <canvas id="spendingChart" role="img" aria-label="Bar chart of total income and expenses for each month"></canvas>
+    <a class="btn" href="chart.html" target="_blank" rel="noopener">Open chart in a new tab</a>
+  </main>
 
+  <script src="chart.umd.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

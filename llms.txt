@@ -1,0 +1,14 @@
+# Budget Buddy
+
+> A simple income and expense tracker that runs entirely in the browser. Add transactions, see your balance, filter by date and compare income with spending month by month.
+
+Budget Buddy is a small portfolio project by Harsh Narain, written in plain HTML, CSS and JavaScript with Chart.js. There's no account or server: transactions are saved in the visitor's own browser (localStorage).
+
+## Pages
+
+- [Tracker](./): Balance, transaction history, the form to add income or expenses, a date filter and the monthly chart.
+- [Chart](chart.html): The monthly income and expense chart on its own page.
+
+## Source
+
+- [GitHub repository](https://github.com/hersh11/budget-tracker-basic)

@@ -1,6 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const localStorageTransactions = JSON.parse(localStorage.getItem('transactions'));
-    let transactions = localStorage.getItem('transactions') !== null ? localStorageTransactions : [];
+    let transactions = [];
+    try {
+      const stored = JSON.parse(localStorage.getItem('transactions'));
+      transactions = Array.isArray(stored) ? stored : [];
+    } catch (error) {
+      // Unreadable storage: show an empty chart instead of failing.
+    }
   
     const spendingChartCanvas = document.getElementById('spendingChart');
   
