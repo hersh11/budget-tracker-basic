@@ -63,11 +63,7 @@ llms.txt          summary for AI assistants
 
 It's a static site with no backend, build command or environment variables, so GitHub Pages, Netlify and Vercel all work.
 
-GitHub Pages currently serves the `gh-pages` branch. To publish changes from `main`:
-
-```bash
-git push origin main:gh-pages
-```
+GitHub Pages publishes the `main` branch automatically, about a minute after each push. (The old `gh-pages` branch isn't used.)
 
 ## Privacy
 
