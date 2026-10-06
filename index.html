@@ -73,6 +73,17 @@
   <main class="bento">
     <h1 class="visually-hidden">Budget Buddy</h1>
 
+    <section class="sample-banner" id="sampleBanner" aria-labelledby="sampleTitle" hidden>
+      <span class="sample-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4.5 18.5A1.7 1.7 0 0 0 6 21h12a1.7 1.7 0 0 0 1.5-2.5L14 9V3" /><path d="M7.5 15h9" /></svg>
+      </span>
+      <div class="sample-copy">
+        <h2 id="sampleTitle">You're looking at sample data</h2>
+        <p id="sampleText"></p>
+      </div>
+      <button type="button" class="btn btn-ghost btn-small" id="clearSamples">Clear sample data</button>
+    </section>
+
     <section class="card balance-card" aria-labelledby="balanceTitle">
       <div class="balance-glow" aria-hidden="true"></div>
       <h2 id="balanceTitle" class="card-label">Total balance</h2>
@@ -148,6 +159,14 @@
       </div>
     </section>
 
+    <section class="card insights-card" aria-labelledby="insightsTitle">
+      <div class="card-head">
+        <h2 id="insightsTitle" class="card-label">Insights</h2>
+        <span class="card-hint">Compared with the month before</span>
+      </div>
+      <ul class="insight-list" id="insightList" aria-live="polite"></ul>
+    </section>
+
     <section class="card category-card" aria-labelledby="categoryTitle">
       <div class="card-head">
         <h2 id="categoryTitle" class="card-label">Where it went</h2>
@@ -213,9 +232,12 @@
       <div class="sheet-grabber" aria-hidden="true"></div>
       <div class="sheet-head">
         <h2 id="sheetTitle">New transaction</h2>
-        <button type="button" class="icon-btn" data-close-sheet aria-label="Close">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
-        </button>
+        <div class="sheet-actions">
+          <button type="button" class="text-btn danger" id="deleteFromSheet" hidden>Delete</button>
+          <button type="button" class="icon-btn" data-close-sheet aria-label="Close">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+          </button>
+        </div>
       </div>
 
       <div class="segmented type-toggle" role="radiogroup" aria-label="Type">
@@ -254,6 +276,7 @@
   <div class="toast-region" aria-live="polite" id="toasts"></div>
 
   <script src="chart.umd.min.js"></script>
+  <script src="lib.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

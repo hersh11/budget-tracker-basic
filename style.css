@@ -406,19 +406,24 @@ svg {
   animation-delay: 140ms;
 }
 
+.insights-card {
+  grid-column: span 12;
+  animation-delay: 220ms;
+}
+
 .category-card {
   grid-column: span 5;
-  animation-delay: 220ms;
+  animation-delay: 300ms;
 }
 
 .trend-card {
   grid-column: span 7;
-  animation-delay: 300ms;
+  animation-delay: 380ms;
 }
 
 .list-card {
   grid-column: span 12;
-  animation-delay: 380ms;
+  animation-delay: 460ms;
 }
 
 .card-head {
@@ -440,6 +445,60 @@ svg {
 .card-hint {
   color: var(--muted);
   font-size: 12px;
+}
+
+/* ---------- Sample data banner ---------- */
+
+.sample-banner {
+  grid-column: span 12;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1.5px dashed color-mix(in srgb, var(--primary) 55%, transparent);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--primary) 9%, var(--surface));
+  backdrop-filter: blur(18px);
+  animation: card-in 800ms var(--ease-out) both;
+}
+
+.sample-banner[hidden] {
+  display: none;
+}
+
+.sample-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  color: #fff;
+}
+
+.sample-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.sample-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.sample-copy h2 {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.sample-copy p {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.sample-banner .btn {
+  flex: none;
 }
 
 /* ---------- Balance ---------- */
@@ -741,6 +800,79 @@ svg {
   background: var(--surface-solid);
 }
 
+/* ---------- Insights ---------- */
+
+.insight-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.insight {
+  --tone: #8b5cf6;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--tone) 28%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--tone) 9%, transparent);
+  animation: slide-in 500ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 70ms);
+  transition: transform 300ms var(--ease-spring);
+}
+
+.insight:hover {
+  transform: translateY(-3px);
+}
+
+.insight.warn {
+  --tone: #f97316;
+}
+
+.insight.good {
+  --tone: #16a34a;
+}
+
+:root[data-theme="dark"] .insight.good {
+  --tone: #4ade80;
+}
+
+.insight-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: var(--tone);
+  color: #fff;
+}
+
+:root[data-theme="dark"] .insight.good .insight-icon {
+  color: #052e16;
+}
+
+.insight-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.4;
+}
+
+.insight p {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.insight-empty {
+  color: var(--muted);
+  font-size: 14px;
+}
+
 /* ---------- Categories ---------- */
 
 .category-body {
@@ -1038,14 +1170,27 @@ svg {
 
 .tx {
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) auto 36px;
+  grid-template-columns: minmax(0, 1fr) 36px;
   align-items: center;
-  gap: 12px;
-  padding: 10px 8px;
+  gap: 6px;
+  padding-right: 8px;
   border-radius: 18px;
   transition: background 200ms ease;
   animation: slide-in 500ms var(--ease-out) both;
   animation-delay: calc(var(--i) * 35ms);
+}
+
+.tx-open {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px 8px;
+  border: 0;
+  border-radius: 18px;
+  background: none;
+  text-align: left;
 }
 
 .tx:hover {
@@ -1088,9 +1233,29 @@ svg {
   white-space: nowrap;
 }
 
-.tx-main span {
+.tx-main > span {
   color: var(--muted);
   font-size: 13px;
+}
+
+/* Sample entries: a dashed icon and a tag, so they never pass for real ones. */
+.tx.is-sample .tx-icon {
+  outline: 1.5px dashed color-mix(in srgb, var(--c) 70%, transparent);
+  outline-offset: -1.5px;
+}
+
+.sample-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 7px;
+  border: 1px dashed color-mix(in srgb, var(--primary) 70%, transparent);
+  border-radius: 999px;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
 }
 
 .tx-amount {
@@ -1118,7 +1283,7 @@ svg {
 }
 
 .tx:hover .tx-delete,
-.tx-delete:focus-visible {
+.tx:focus-within .tx-delete {
   opacity: 1;
 }
 
@@ -1362,6 +1527,22 @@ svg {
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.02em;
+}
+
+.sheet-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sheet-actions .text-btn {
+  padding: 8px 12px;
+  border-radius: 999px;
+}
+
+.sheet-actions .text-btn:hover {
+  background: color-mix(in srgb, var(--expense) 12%, transparent);
+  text-decoration: none;
 }
 
 .type-toggle {
@@ -1846,9 +2027,40 @@ svg {
   }
 
   .tx {
-    grid-template-columns: 42px minmax(0, 1fr) auto 34px;
+    grid-template-columns: minmax(0, 1fr) 34px;
+    gap: 2px;
+    padding-right: 2px;
+  }
+
+  .tx-open {
+    grid-template-columns: 42px minmax(0, 1fr) auto;
     gap: 10px;
     padding: 8px 4px;
+  }
+
+  .sample-banner {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .sample-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+  }
+
+  .sample-copy {
+    flex-basis: calc(100% - 46px);
+  }
+
+  .sample-copy p {
+    font-size: 13px;
+  }
+
+  .sample-banner .btn {
+    width: 100%;
   }
 
   .tx-icon {

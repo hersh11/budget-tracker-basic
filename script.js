@@ -1,42 +1,42 @@
-// Budget Buddy
+// Budget Buddy: the page. The logic (dates, money, totals, insights, sample
+// data) lives in lib.js, which loads first and is shared with the tests.
 //
 // Transactions live in localStorage under "transactions", the same key and
 // shape the first version used ({ id, text, amount, date }), now with a
-// category. Income is stored as a positive amount and spending as negative.
+// category and a sample flag. Income is positive and spending negative.
+
+const {
+  CATEGORIES,
+  categoryById,
+  createId,
+  parseDate,
+  toDateValue,
+  monthKey,
+  startOfMonth,
+  addMonths,
+  money,
+  normalizeTransaction,
+  monthTotals,
+  spendingByCategory,
+  budgetStatus,
+  buildInsights,
+  sampleTransactions,
+} = window.BudgetLib;
 
 const STORAGE_KEYS = {
   transactions: "transactions",
   budget: "budget-buddy.budget",
   theme: "budget-buddy.theme",
+  started: "budget-buddy.started",
+  sampleBudget: "budget-buddy.sample-budget",
 };
-
-const CATEGORIES = {
-  expense: [
-    { id: "food", label: "Food & dining", emoji: "🍔", color: "#f97316" },
-    { id: "groceries", label: "Groceries", emoji: "🛒", color: "#22c55e" },
-    { id: "transport", label: "Transport", emoji: "🚕", color: "#eab308" },
-    { id: "rent", label: "Rent", emoji: "🏠", color: "#8b5cf6" },
-    { id: "bills", label: "Bills", emoji: "💡", color: "#06b6d4" },
-    { id: "shopping", label: "Shopping", emoji: "🛍️", color: "#ec4899" },
-    { id: "health", label: "Health", emoji: "💊", color: "#ef4444" },
-    { id: "fun", label: "Fun", emoji: "🎬", color: "#a855f7" },
-    { id: "travel", label: "Travel", emoji: "✈️", color: "#0ea5e9" },
-    { id: "education", label: "Education", emoji: "📚", color: "#14b8a6" },
-    { id: "other-expense", label: "Other", emoji: "📦", color: "#94a3b8" },
-  ],
-  income: [
-    { id: "salary", label: "Salary", emoji: "💼", color: "#16a34a" },
-    { id: "freelance", label: "Freelance", emoji: "💻", color: "#0d9488" },
-    { id: "gift", label: "Gift", emoji: "🎁", color: "#db2777" },
-    { id: "refund", label: "Refund", emoji: "↩️", color: "#2563eb" },
-    { id: "interest", label: "Interest", emoji: "🏦", color: "#ca8a04" },
-    { id: "other-income", label: "Other", emoji: "💰", color: "#64748b" },
-  ],
-};
-const categoryById = new Map([...CATEGORIES.expense, ...CATEGORIES.income].map((category) => [category.id, category]));
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = (selector) => document.querySelector(selector);
+
+const formatMonth = new Intl.DateTimeFormat("en-IN", { month: "long", year: "numeric" });
+const formatShortMonth = new Intl.DateTimeFormat("en-IN", { month: "short" });
+const formatDay = new Intl.DateTimeFormat("en-IN", { weekday: "short", day: "numeric", month: "short" });
 
 // ---------- Storage ----------
 
@@ -57,26 +57,12 @@ function writeStorage(key, value) {
   }
 }
 
-function createId() {
-  return window.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
-}
-
-// Accepts anything the old or new version saved and drops what can't be used.
-function normalizeTransaction(raw) {
-  const amount = Number(raw?.amount);
-  const date = typeof raw?.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.date) ? raw.date : "";
-  if (!Number.isFinite(amount) || amount === 0 || !date) return null;
-  const type = amount < 0 ? "expense" : "income";
-  const category = categoryById.has(raw.category) && CATEGORIES[type].some((item) => item.id === raw.category)
-    ? raw.category
-    : type === "expense" ? "other-expense" : "other-income";
-  return {
-    id: String(raw.id ?? createId()),
-    text: String(raw.text ?? "").trim() || categoryById.get(category).label,
-    amount,
-    date,
-    category,
-  };
+function removeStorage(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch (error) {
+    /* see writeStorage */
+  }
 }
 
 function loadTransactions() {
@@ -86,45 +72,6 @@ function loadTransactions() {
 
 function saveTransactions() {
   writeStorage(STORAGE_KEYS.transactions, state.transactions);
-}
-
-// ---------- Dates and money ----------
-
-function parseDate(value) {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function toDateValue(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
-function monthKey(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function startOfMonth(date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function addMonths(date, count) {
-  return new Date(date.getFullYear(), date.getMonth() + count, 1);
-}
-
-const formatMonth = new Intl.DateTimeFormat("en-IN", { month: "long", year: "numeric" });
-const formatShortMonth = new Intl.DateTimeFormat("en-IN", { month: "short" });
-const formatDay = new Intl.DateTimeFormat("en-IN", { weekday: "short", day: "numeric", month: "short" });
-
-function money(value, { sign = false } = {}) {
-  const absolute = Math.abs(value);
-  const text = new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    minimumFractionDigits: absolute % 1 ? 2 : 0,
-    maximumFractionDigits: 2,
-  }).format(absolute);
-  if (sign) return `${value < 0 ? "−" : "+"}${text}`;
-  return value < 0 ? `−${text}` : text;
 }
 
 function escapeHtml(value) {
@@ -141,24 +88,14 @@ const state = {
   search: "",
   budget: Number(readStorage(STORAGE_KEYS.budget, 0)) || 0,
   newId: null,
+  editingId: null,
 };
 
 const charts = {};
 
-function inMonth(transaction, month = state.month) {
-  return transaction.date.slice(0, 7) === monthKey(month);
-}
-
-function monthTotals(month) {
-  let income = 0;
-  let expense = 0;
-  state.transactions.forEach((transaction) => {
-    if (!inMonth(transaction, month)) return;
-    if (transaction.amount > 0) income += transaction.amount;
-    else expense -= transaction.amount;
-  });
-  return { income, expense, net: income - expense };
-}
+const inMonth = (transaction, month = state.month) => transaction.date.slice(0, 7) === monthKey(month);
+const totalsFor = (month) => monthTotals(state.transactions, month);
+const hasSamples = () => state.transactions.some((transaction) => transaction.sample);
 
 // ---------- Odometer ----------
 
@@ -197,6 +134,18 @@ function renderMonthLabel(direction = 0) {
   }
 }
 
+function renderSampleBanner() {
+  const banner = $("#sampleBanner");
+  const count = state.transactions.filter((transaction) => transaction.sample).length;
+  banner.hidden = count === 0;
+  if (count) {
+    const own = state.transactions.length - count;
+    $("#sampleText").textContent = own
+      ? `${count} example transactions are mixed in with your ${own}. They're tagged “Sample”, and clearing them keeps yours.`
+      : `These ${count} transactions are examples. Add your own any time, then clear the samples to start fresh.`;
+  }
+}
+
 function renderBalance() {
   const total = state.transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
   const text = money(total);
@@ -208,7 +157,7 @@ function renderBalance() {
     ? `Across ${count} transaction${count === 1 ? "" : "s"}`
     : `Add your first transaction, or <button type="button" class="inline-link" data-load-sample>try it with sample data</button>`;
 
-  const totals = monthTotals(state.month);
+  const totals = totalsFor(state.month);
   $("#monthIncome").textContent = money(totals.income);
   $("#monthExpense").textContent = money(totals.expense);
   $("#monthNet").textContent = money(totals.net, { sign: totals.net !== 0 });
@@ -216,50 +165,44 @@ function renderBalance() {
 }
 
 function renderBudget() {
-  const { expense } = monthTotals(state.month);
-  const ring = $("#budgetRing");
-  const card = $(".budget-card");
-  const monthName = formatMonth.format(state.month).split(" ")[0];
+  const status = budgetStatus({
+    spent: totalsFor(state.month).expense,
+    budget: state.budget,
+    month: state.month,
+    today: new Date(),
+  });
+  $(".budget-card").dataset.level = status.level;
+  $("#budgetRing").style.setProperty("--value", status.ringValue);
+  $("#budgetPercent").textContent = status.percent === null ? "–" : `${status.percent}%`;
+  $("#budgetPercentLabel").textContent = status.percent === null ? "no budget" : "spent";
+  $("#budgetHeadline").textContent = status.headline;
+  $("#budgetDetail").textContent = status.detail;
   $("#editBudget").textContent = state.budget ? "Edit" : "Set budget";
+}
 
-  if (!state.budget) {
-    card.dataset.level = "none";
-    ring.style.setProperty("--value", 0);
-    $("#budgetPercent").textContent = "–";
-    $("#budgetPercentLabel").textContent = "no budget";
-    $("#budgetHeadline").textContent = "Set a monthly budget to see how much you have left.";
-    $("#budgetDetail").textContent = expense ? `You've spent ${money(expense)} in ${monthName}.` : "";
-    return;
-  }
+const insightIcons = {
+  pace: '<path d="M4 17l6-6 4 4 6-8" /><path d="M14 7h6v6" />',
+  up: '<path d="M12 19V5M5 12l7-7 7 7" />',
+  down: '<path d="M12 5v14M5 12l7 7 7-7" />',
+  save: '<path d="M5 11a7 7 0 0 1 13-3h2v4h-2a7 7 0 0 1-3 4v3h-3v-2h-2v2H7v-3a7 7 0 0 1-2-5z" /><circle cx="15" cy="10" r="1" />',
+  top: '<path d="M3 3v18h18" /><path d="M7 14l4-4 3 3 5-6" />',
+};
 
-  const percent = (expense / state.budget) * 100;
-  const shown = Math.round(percent);
-  const remaining = state.budget - expense;
-  card.dataset.level = remaining < 0 ? "over" : shown >= 75 ? "warn" : "ok";
-  ring.style.setProperty("--value", Math.min(percent, 100));
-  $("#budgetPercent").textContent = `${shown}%`;
-  $("#budgetPercentLabel").textContent = "spent";
-
-  const today = new Date();
-  const current = monthKey(state.month) === monthKey(today);
-  const future = state.month > today;
-  if (remaining < 0) {
-    $("#budgetHeadline").textContent = `${money(-remaining)} over budget`;
-  } else {
-    $("#budgetHeadline").textContent = future ? `${money(state.budget)} to spend in ${monthName}` : `${money(remaining)} left`;
-  }
-
-  if (current) {
-    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-    const daysLeft = daysInMonth - today.getDate() + 1;
-    $("#budgetDetail").textContent = remaining > 0
-      ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} to go · about ${money(Math.floor(remaining / daysLeft))} a day`
-      : `${daysLeft} day${daysLeft === 1 ? "" : "s"} still to go this month`;
-  } else if (future) {
-    $("#budgetDetail").textContent = "Nothing spent yet.";
-  } else {
-    $("#budgetDetail").textContent = `Spent ${money(expense)} of ${money(state.budget)} in ${monthName}.`;
-  }
+function renderInsights() {
+  const items = buildInsights({
+    transactions: state.transactions,
+    month: state.month,
+    today: new Date(),
+    budget: state.budget,
+  });
+  $("#insightsTitle").textContent = `Insights for ${formatMonth.format(state.month).split(" ")[0]}`;
+  $("#insightList").innerHTML = items.length
+    ? items.map((item, index) => `
+      <li class="insight ${item.tone}" style="--i:${index}">
+        <span class="insight-icon" aria-hidden="true"><svg viewBox="0 0 24 24">${insightIcons[item.icon]}</svg></span>
+        <p>${escapeHtml(item.text)}</p>
+      </li>`).join("")
+    : `<li class="insight-empty">Add a few weeks of spending to see how this month compares with the last.</li>`;
 }
 
 function themeColors() {
@@ -275,19 +218,8 @@ function themeColors() {
   };
 }
 
-function spendingByCategory() {
-  const totals = new Map();
-  state.transactions.forEach((transaction) => {
-    if (transaction.amount >= 0 || !inMonth(transaction)) return;
-    totals.set(transaction.category, (totals.get(transaction.category) || 0) - transaction.amount);
-  });
-  return [...totals.entries()]
-    .map(([id, total]) => ({ ...categoryById.get(id), total }))
-    .sort((a, b) => b.total - a.total);
-}
-
 function renderCategories() {
-  const rows = spendingByCategory();
+  const rows = spendingByCategory(state.transactions, state.month);
   const total = rows.reduce((sum, row) => sum + row.total, 0);
   const colors = themeColors();
   $("#donutTotal").textContent = money(total);
@@ -354,7 +286,7 @@ function renderCategories() {
 
 function renderTrend() {
   const months = Array.from({ length: 6 }, (_, i) => addMonths(state.month, i - 5));
-  const totals = months.map(monthTotals);
+  const totals = months.map(totalsFor);
   const colors = themeColors();
   const alpha = (hex, value) => `${hex}${Math.round(value * 255).toString(16).padStart(2, "0")}`;
   const selected = months.length - 1;
@@ -519,16 +451,19 @@ function renderList() {
           ${group.items.map((transaction) => {
             const item = categoryById.get(transaction.category);
             const type = transaction.amount < 0 ? "expense" : "income";
-            const isNew = transaction.id === state.newId;
+            const amount = money(transaction.amount, { sign: true });
+            const classes = ["tx", transaction.id === state.newId ? "is-new" : "", transaction.sample ? "is-sample" : ""].filter(Boolean).join(" ");
             return `
-              <li class="tx${isNew ? " is-new" : ""}" data-id="${escapeHtml(transaction.id)}" style="--i:${Math.min(index++, 12)}">
-                <span class="tx-icon" style="--c:${item.color}" aria-hidden="true">${item.emoji}</span>
-                <span class="tx-main">
-                  <strong>${escapeHtml(transaction.text)}</strong>
-                  <span>${escapeHtml(item.label)}</span>
-                </span>
-                <span class="tx-amount ${type}">${money(transaction.amount, { sign: true })}</span>
-                <button type="button" class="tx-delete" data-delete="${escapeHtml(transaction.id)}" aria-label="Delete ${escapeHtml(transaction.text)}, ${money(transaction.amount, { sign: true })}">
+              <li class="${classes}" data-id="${escapeHtml(transaction.id)}" style="--i:${Math.min(index++, 12)}">
+                <button type="button" class="tx-open" data-edit="${escapeHtml(transaction.id)}" aria-label="Edit ${escapeHtml(transaction.text)}, ${amount}${transaction.sample ? ", sample" : ""}">
+                  <span class="tx-icon" style="--c:${item.color}" aria-hidden="true">${item.emoji}</span>
+                  <span class="tx-main">
+                    <strong>${escapeHtml(transaction.text)}</strong>
+                    <span>${escapeHtml(item.label)}${transaction.sample ? ' <span class="sample-tag">Sample</span>' : ""}</span>
+                  </span>
+                  <span class="tx-amount ${type}">${amount}</span>
+                </button>
+                <button type="button" class="tx-delete" data-delete="${escapeHtml(transaction.id)}" aria-label="Delete ${escapeHtml(transaction.text)}, ${amount}">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" /></svg>
                 </button>
               </li>`;
@@ -541,8 +476,10 @@ function renderList() {
 
 function renderAll() {
   renderMonthLabel();
+  renderSampleBanner();
   renderBalance();
   renderBudget();
+  renderInsights();
   renderCategories();
   renderTrend();
   renderList();
@@ -556,6 +493,7 @@ function changeMonth(month, direction) {
   renderMonthLabel(direction);
   renderBalance();
   renderBudget();
+  renderInsights();
   renderCategories();
   renderTrend();
   renderList();
@@ -578,17 +516,33 @@ function setTypeFilter(value) {
   syncSegmented(input.closest(".segmented"));
 }
 
-function addTransaction(transaction) {
-  state.transactions.push(transaction);
-  saveTransactions();
+// Shows the month a transaction belongs to, highlighting it.
+function showTransaction(transaction) {
   state.newId = transaction.id;
   const month = startOfMonth(parseDate(transaction.date));
   if (monthKey(month) !== monthKey(state.month)) {
     changeMonth(month, month < state.month ? -1 : 1);
+    renderSampleBanner();
     state.newId = null;
   } else {
     renderAll();
   }
+}
+
+function addTransaction(transaction) {
+  state.transactions.push(transaction);
+  saveTransactions();
+  showTransaction(transaction);
+}
+
+function updateTransaction(id, changes) {
+  const index = state.transactions.findIndex((transaction) => transaction.id === id);
+  if (index === -1) return null;
+  // Once edited, an entry is the visitor's own rather than a sample.
+  state.transactions[index] = { ...state.transactions[index], ...changes, sample: false };
+  saveTransactions();
+  showTransaction(state.transactions[index]);
+  return state.transactions[index];
 }
 
 function removeTransaction(id) {
@@ -620,51 +574,48 @@ function removeTransaction(id) {
   row.addEventListener("animationend", finish, { once: true });
 }
 
-// A small, seeded mix of the last four months so the numbers look lived in.
-function sampleTransactions() {
-  let seed = 7;
-  const random = () => {
-    seed = (seed * 16807) % 2147483647;
-    return (seed - 1) / 2147483646;
-  };
-  const pick = (items) => items[Math.floor(random() * items.length)];
-  const today = new Date();
-  const transactions = [];
-  const add = (date, amount, category, text) => {
-    if (date > today) return;
-    transactions.push({ id: createId(), text, amount, date: toDateValue(date), category });
-  };
-
-  for (let back = 3; back >= 0; back -= 1) {
-    const month = addMonths(today, -back);
-    const day = (d) => new Date(month.getFullYear(), month.getMonth(), d);
-    add(day(1), 55000, "salary", "Monthly salary");
-    add(day(1), -15000, "rent", "Rent");
-    add(day(5), -1899, "bills", pick(["Electricity bill", "Phone and internet", "Gas bill"]));
-    if (random() > 0.4) add(day(12 + Math.floor(random() * 10)), 6000 + Math.round(random() * 9000 / 100) * 100, "freelance", pick(["Logo design", "Website fix", "Tutoring"]));
-    for (let week = 0; week < 4; week += 1) {
-      add(day(3 + week * 7), -(900 + Math.round(random() * 1400)), "groceries", pick(["Weekly groceries", "Vegetables and fruit", "Supermarket run"]));
-      add(day(4 + week * 7 + Math.floor(random() * 3)), -(180 + Math.round(random() * 700)), "food", pick(["Lunch with friends", "Coffee", "Pizza night", "Biryani", "Street food"]));
-      add(day(2 + week * 7 + Math.floor(random() * 4)), -(60 + Math.round(random() * 340)), "transport", pick(["Metro card top-up", "Auto ride", "Cab home", "Fuel"]));
-    }
-    add(day(9 + Math.floor(random() * 15)), -(499 + Math.round(random() * 1200)), "fun", pick(["Movie tickets", "Concert", "Streaming subscription", "Bowling"]));
-    add(day(10 + Math.floor(random() * 15)), -(800 + Math.round(random() * 3200)), "shopping", pick(["New shoes", "T-shirts", "Headphones", "Books and stationery"]));
-    if (random() > 0.6) add(day(15 + Math.floor(random() * 10)), -(300 + Math.round(random() * 900)), "health", pick(["Pharmacy", "Doctor visit"]));
-  }
-  return transactions;
-}
-
-function loadSampleData() {
-  state.transactions = sampleTransactions();
+function loadSampleData({ quiet = false } = {}) {
+  state.transactions = [...state.transactions.filter((transaction) => !transaction.sample), ...sampleTransactions()];
   if (!state.budget) {
-    state.budget = 25000;
+    state.budget = 30000;
     writeStorage(STORAGE_KEYS.budget, state.budget);
+    writeStorage(STORAGE_KEYS.sampleBudget, true);
   }
   saveTransactions();
   state.month = startOfMonth(new Date());
   renderAll();
-  burstFrom($(".balance-card"));
-  showToast("Sample data loaded. Clear it any time from the bottom of the list.");
+  if (!quiet) {
+    burstFrom($(".balance-card"));
+    showToast("Sample data loaded. You can clear it any time from the banner at the top.");
+  }
+}
+
+// Removes only the sample entries (and the budget they set), with undo.
+function clearSamples() {
+  const samples = state.transactions.filter((transaction) => transaction.sample);
+  const hadSampleBudget = readStorage(STORAGE_KEYS.sampleBudget, false);
+  const budgetBefore = state.budget;
+  state.transactions = state.transactions.filter((transaction) => !transaction.sample);
+  if (hadSampleBudget) {
+    state.budget = 0;
+    removeStorage(STORAGE_KEYS.budget);
+    removeStorage(STORAGE_KEYS.sampleBudget);
+  }
+  saveTransactions();
+  renderAll();
+  showToast(state.transactions.length ? "Sample data cleared. Your own entries are still here." : "Sample data cleared. Over to you!", {
+    action: "Undo",
+    onAction: () => {
+      state.transactions = [...samples, ...state.transactions];
+      if (hadSampleBudget && !state.budget) {
+        state.budget = budgetBefore;
+        writeStorage(STORAGE_KEYS.budget, budgetBefore);
+        writeStorage(STORAGE_KEYS.sampleBudget, true);
+      }
+      saveTransactions();
+      renderAll();
+    },
+  });
 }
 
 function exportCsv() {
@@ -771,7 +722,7 @@ function syncSegmented(group) {
   pill.style.transform = `translateX(${checked.offsetLeft}px)`;
 }
 
-// ---------- Add transaction sheet ----------
+// ---------- Add and edit sheet ----------
 
 const sheet = $("#sheet");
 const form = $("#transactionForm");
@@ -790,14 +741,26 @@ function renderCategoryGrid(selectedId) {
       <span class="category-name">${escapeHtml(item.label)}</span>
     </label>`).join("");
   sheet.dataset.type = type;
-  $("#submitBtn").textContent = type === "income" ? "Add income" : "Add expense";
+  const verb = state.editingId ? "Save" : "Add";
+  $("#submitBtn").textContent = state.editingId ? "Save changes" : `${verb} ${type === "income" ? "income" : "expense"}`;
 }
 
-function openSheet() {
+// Opens the sheet empty, or filled in with an existing transaction to edit.
+function openSheet(transaction = null) {
   form.reset();
-  form.elements.date.value = toDateValue(new Date());
+  state.editingId = transaction ? transaction.id : null;
+  $("#sheetTitle").textContent = transaction ? "Edit transaction" : "New transaction";
+  $("#deleteFromSheet").hidden = !transaction;
   $("#formError").textContent = "";
-  renderCategoryGrid();
+  if (transaction) {
+    form.elements.type.value = transaction.amount < 0 ? "expense" : "income";
+    form.elements.amount.value = Math.abs(transaction.amount);
+    form.elements.note.value = transaction.text === categoryById.get(transaction.category).label ? "" : transaction.text;
+    form.elements.date.value = transaction.date;
+  } else {
+    form.elements.date.value = toDateValue(new Date());
+  }
+  renderCategoryGrid(transaction?.category);
   sheet.showModal();
   requestAnimationFrame(() => {
     syncSegmented(sheet.querySelector(".type-toggle"));
@@ -853,17 +816,30 @@ form.addEventListener("submit", (event) => {
   }
 
   const rounded = Math.round(amount * 100) / 100;
-  const transaction = {
-    id: createId(),
+  const fields = {
     text: form.elements.note.value.trim() || categoryById.get(category).label,
     amount: type === "expense" ? -rounded : rounded,
     date,
     category,
   };
+  const editingId = state.editingId;
   closeSheet();
-  addTransaction(transaction);
+
+  if (editingId) {
+    updateTransaction(editingId, fields);
+    showToast(`Saved changes to “${fields.text}”`);
+    return;
+  }
+
+  addTransaction({ id: createId(), ...fields, sample: false });
   if (type === "income") burstFrom($(".balance-card"));
   showToast(`${type === "income" ? "Added" : "Logged"} ${money(rounded)} · ${categoryById.get(category).label}`);
+});
+
+$("#deleteFromSheet").addEventListener("click", () => {
+  const id = state.editingId;
+  closeSheet();
+  if (id) removeTransaction(id);
 });
 
 sheet.addEventListener("cancel", (event) => {
@@ -898,8 +874,11 @@ budgetForm.addEventListener("submit", (event) => {
   }
   state.budget = value;
   writeStorage(STORAGE_KEYS.budget, value);
+  // A budget the visitor chose themselves stays when samples are cleared.
+  removeStorage(STORAGE_KEYS.sampleBudget);
   budgetForm.hidden = true;
   renderBudget();
+  renderInsights();
   showToast(`Monthly budget set to ${money(value)}`);
 });
 
@@ -952,9 +931,13 @@ document.addEventListener("click", (event) => {
   const target = event.target;
   if (target.closest("[data-open-sheet]")) openSheet();
   else if (target.closest("[data-load-sample]")) loadSampleData();
+  else if (target.closest("#clearSamples")) clearSamples();
   else if (target.closest("#clearCategory")) toggleCategoryFilter(state.categoryFilter);
   else if (target.closest("[data-delete]")) removeTransaction(target.closest("[data-delete]").dataset.delete);
-  else if (target.closest(".legend-item")) toggleCategoryFilter(target.closest(".legend-item").dataset.category);
+  else if (target.closest("[data-edit]")) {
+    const transaction = state.transactions.find((item) => item.id === target.closest("[data-edit]").dataset.edit);
+    if (transaction) openSheet(transaction);
+  } else if (target.closest(".legend-item")) toggleCategoryFilter(target.closest(".legend-item").dataset.category);
 });
 
 $("#categoryLegend").addEventListener("pointerover", (event) => {
@@ -1013,6 +996,14 @@ document.addEventListener("keydown", (event) => {
 window.addEventListener("resize", () => document.querySelectorAll(".segmented").forEach(syncSegmented));
 
 // ---------- Start ----------
+
+// First visit: fill the app with clearly labelled sample data so there's
+// something to look at. Anyone who already has data (or cleared the samples
+// before) is left alone.
+if (readStorage(STORAGE_KEYS.started, false) !== true) {
+  writeStorage(STORAGE_KEYS.started, true);
+  if (!state.transactions.length) loadSampleData({ quiet: true });
+}
 
 Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
 syncThemeButton();

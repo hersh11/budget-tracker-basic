@@ -2,11 +2,11 @@
 
 > A friendly income and expense tracker that runs entirely in the browser. Log transactions by category, set a monthly budget, see where the money went and compare the last six months.
 
-Budget Buddy is a portfolio project by Harsh Narain, written in plain HTML, CSS and JavaScript with Chart.js. There's no account or server: transactions are saved in the visitor's own browser (localStorage). A "try it with sample data" button fills it with four months of example transactions.
+Budget Buddy is a portfolio project by Harsh Narain, written in plain HTML, CSS and JavaScript with Chart.js. There's no account or server: transactions are saved in the visitor's own browser (localStorage). A first visit opens with four months of clearly labelled sample transactions, which can be cleared without touching the visitor's own entries.
 
 ## Page
 
-- [Tracker](./): Balance, this month's income and spending, a monthly budget ring, spending by category, a six-month trend, and the transaction list with search, filters, delete and undo. New transactions are added from a sheet with emoji categories.
+- [Tracker](./): Balance, this month's income and spending, a monthly budget ring, spending insights compared with the previous month, spending by category, a six-month trend, and the transaction list with search, filters, editing, delete and undo. Transactions are added and edited in a sheet with emoji categories.
 
 ## Source
 
