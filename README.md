@@ -1,5 +1,7 @@
 # Budget Buddy
 
+**Live demo: [budget-buddy-hersh.vercel.app](https://budget-buddy-hersh.vercel.app)**
+
 Budget Buddy is a friendly income and expense tracker that runs entirely in the browser. Log what you earn and spend by category, set a monthly budget, and see where your money goes, month by month.
 
 It's plain HTML, CSS and JavaScript with Chart.js for the charts. There's no framework, no build step and no server.
@@ -61,9 +63,7 @@ llms.txt          summary for AI assistants
 
 ## Deployment
 
-It's a static site with no backend, build command or environment variables, so GitHub Pages, Netlify and Vercel all work.
-
-GitHub Pages publishes the `main` branch automatically, about a minute after each push. (The old `gh-pages` branch isn't used.)
+It's a static site with no backend, build command or environment variables. The live site is the `budget-buddy` project on Vercel, which redeploys on every push to `main`. Netlify or GitHub Pages would work just as well.
 
 ## Privacy
 
